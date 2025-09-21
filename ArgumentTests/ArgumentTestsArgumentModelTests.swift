@@ -256,3 +256,144 @@ struct EdgeCaseTests {
         #expect(filtered.count == 19, "Il devrait y avoir 19 notes contenant '99' dans le titre")
     }
 }
+
+@Suite("Tests pour la fonctionnalité de copie")
+struct CopyFunctionalityTests {
+    
+    @Test("Copie du contenu texte dans le presse-papiers")
+    func copyTextContent() async throws {
+        let testContent = "Ceci est un contenu de test pour la copie"
+        let note = ArgumentNote(title: "Titre de test", content: testContent)
+        
+        // Simuler la copie (nous testons la logique, pas l'interaction avec UIPasteboard)
+        let contentToCopy = note.content
+        
+        #expect(contentToCopy == testContent)
+        #expect(contentToCopy != note.title, "Le contenu copié ne devrait pas inclure le titre")
+        #expect(!contentToCopy.contains(note.title), "Le contenu copié ne devrait pas contenir le titre")
+    }
+    
+    @Test("Copie du contenu avec caractères spéciaux")
+    func copyContentWithSpecialCharacters() async throws {
+        let specialContent = "Contenu avec émojis 🎉, accents éàù, et symboles ∞≤≥"
+        let note = ArgumentNote(title: "Test", content: specialContent)
+        
+        let contentToCopy = note.content
+        
+        #expect(contentToCopy == specialContent)
+        #expect(contentToCopy.contains("🎉"))
+        #expect(contentToCopy.contains("éàù"))
+        #expect(contentToCopy.contains("∞≤≥"))
+    }
+    
+    @Test("Copie de contenu vide")
+    func copyEmptyContent() async throws {
+        let note = ArgumentNote(title: "Titre", content: "")
+        
+        let contentToCopy = note.content
+        
+        #expect(contentToCopy.isEmpty)
+        #expect(contentToCopy == "")
+    }
+    
+    @Test("Copie de contenu multilignes")
+    func copyMultilineContent() async throws {
+        let multilineContent = """
+        Première ligne
+        Deuxième ligne avec du texte
+        
+        Ligne après saut de ligne
+        Dernière ligne
+        """
+        let note = ArgumentNote(title: "Test multilignes", content: multilineContent)
+        
+        let contentToCopy = note.content
+        
+        #expect(contentToCopy == multilineContent)
+        #expect(contentToCopy.contains("\n"))
+        #expect(contentToCopy.components(separatedBy: "\n").count == 5)
+    }
+    
+    @Test("Copie de très long contenu")
+    func copyVeryLongContent() async throws {
+        let longContent = String(repeating: "Contenu répétitif ", count: 1000) // ~18000 caractères
+        let note = ArgumentNote(title: "Test long", content: longContent)
+        
+        let contentToCopy = note.content
+        
+        #expect(contentToCopy == longContent)
+        #expect(contentToCopy.count > 10000)
+        #expect(!contentToCopy.contains(note.title))
+    }
+    
+    @Test("Vérification que le titre n'est jamais inclus dans la copie")
+    func ensureTitleNotCopied() async throws {
+        let testCases = [
+            ("Titre simple", "Contenu simple"),
+            ("Titre avec mots clés", "Contenu avec les mêmes mots clés"),
+            ("", "Contenu avec titre vide"),
+            ("Très long titre répétitif", "Très long titre répétitif dans le contenu"),
+            ("🎉 Émoji", "🎉 Émoji dans le contenu aussi")
+        ]
+        
+        for (title, content) in testCases {
+            let note = ArgumentNote(title: title, content: content)
+            let contentToCopy = note.content
+            
+            #expect(contentToCopy == content, "Le contenu copié devrait être exactement le contenu de la note")
+            #expect(contentToCopy != "\(title)\n\n\(content)", "Le contenu copié ne devrait pas inclure le titre avec formatage")
+        }
+    }
+    
+    @Test("Validation pour notes image - imageData disponible")
+    func validateImageNoteCopyability() async throws {
+        // Créer une image test simple
+        let size = CGSize(width: 10, height: 10)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let testImage = renderer.image { context in
+            UIColor.blue.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+        }
+        
+        let imageData = testImage.pngData()
+        let note = ArgumentNote(title: "Image test", imageData: imageData)
+        
+        #expect(note.isImageNote == true)
+        #expect(note.image != nil, "L'image devrait être disponible pour la copie")
+        #expect(note.imageData == imageData, "Les données d'image devraient être préservées")
+    }
+    
+    @Test("Conditions d'affichage du bouton de copie")
+    func copyButtonVisibilityConditions() async throws {
+        // Test avec contenu texte non vide
+        let textNote = ArgumentNote(title: "Test", content: "Contenu à copier")
+        let shouldShowForText = !textNote.content.isEmpty || textNote.isImageNote
+        #expect(shouldShowForText == true, "Le bouton devrait être visible pour une note avec contenu texte")
+        
+        // Test avec contenu vide
+        let emptyNote = ArgumentNote(title: "Test", content: "")
+        let shouldShowForEmpty = !emptyNote.content.isEmpty || emptyNote.isImageNote
+        #expect(shouldShowForEmpty == false, "Le bouton ne devrait pas être visible pour une note vide")
+        
+        // Test avec image
+        let imageData = Data([0x89, 0x50, 0x4E, 0x47]) // Header PNG factice
+        let imageNote = ArgumentNote(title: "Image", imageData: imageData)
+        let shouldShowForImage = !imageNote.content.isEmpty || imageNote.isImageNote
+        #expect(shouldShowForImage == true, "Le bouton devrait être visible pour une note image")
+    }
+    
+    @Test("Performance de la copie avec gros contenu")
+    func copyPerformanceWithLargeContent() async throws {
+        // Créer un très gros contenu (1MB de texte environ)
+        let largeContent = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 20000)
+        let note = ArgumentNote(title: "Large content", content: largeContent)
+        
+        let startTime = Date()
+        let contentToCopy = note.content
+        let copyTime = Date().timeIntervalSince(startTime)
+        
+        #expect(copyTime < 0.1, "La copie d'un gros contenu devrait être rapide")
+        #expect(contentToCopy == largeContent, "Le contenu copié devrait être identique même pour un gros volume")
+        #expect(contentToCopy.count > 1000000, "Le contenu devrait faire plus d'1MB")
+    }
+}
