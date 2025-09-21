@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  ArgumentNotesListView.swift
 //  Argument
 //
 //  Created by Ludovic Blondon on 20/09/2025.
@@ -8,54 +8,100 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct ArgumentNotesListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @Query(sort: \ArgumentNote.modifiedAt, order: .reverse) private var notes: [ArgumentNote]
+    @State private var searchText = ""
+    @State private var showingAddNote = false
+    
+    var filteredNotes: [ArgumentNote] {
+        if searchText.isEmpty {
+            return notes
+        } else {
+            return notes.filter { note in
+                note.title.localizedCaseInsensitiveContains(searchText) ||
+                note.content.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+    
     var body: some View {
-        NavigationSplitView {
+        NavigationStack {
             List {
-                ForEach(items) { item in
+                ForEach(filteredNotes) { note in
                     NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        ArgumentNoteDetailView(note: note)
                     } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        ArgumentNoteRow(note: note)
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .onDelete(perform: deleteNotes)
             }
+            .listStyle(.plain)
+            .searchable(text: $searchText, prompt: "Rechercher...")
+            .navigationTitle("Arguments")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    Button {
+                        showingAddNote = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .fontWeight(.medium)
                     }
+                    .buttonStyle(.glass)
                 }
             }
-        } detail: {
-            Text("Select an item")
+        }
+        .sheet(isPresented: $showingAddNote) {
+            AddArgumentNoteView()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
+    
+    private func deleteNotes(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                modelContext.delete(filteredNotes[index])
             }
         }
     }
 }
 
+struct ArgumentNoteRow: View {
+    let note: ArgumentNote
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Titre en gros et gras
+            Text(note.title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            
+            // Aperçu du contenu en petit
+            Text(note.contentPreview)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            
+            // Indicateur si c'est une note image
+            if note.isImageNote {
+                HStack {
+                    Image(systemName: "photo")
+                        .foregroundColor(.secondary)
+                    Text("Note avec image")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 #Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    ArgumentNotesListView()
+        .modelContainer(for: ArgumentNote.self, inMemory: true)
 }
