@@ -69,14 +69,17 @@ struct ArgumentNoteDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    // Bouton de partage
-                    if !note.content.isEmpty || note.isImageNote {
+                HStack(spacing: 16) {
+                    // Bouton de partage (masqué pendant l'édition)
+                    if !isEditing && (!note.content.isEmpty || note.isImageNote) {
                         Button {
                             showingShareSheet = true
                         } label: {
                             Image(systemName: "square.and.arrow.up")
+                                .font(.title3)
+                                .fontWeight(.medium)
                         }
+                        .buttonStyle(.glass)
                     }
                     
                     // Bouton d'édition
@@ -88,8 +91,12 @@ struct ArgumentNoteDetailView: View {
                         }
                         isEditing.toggle()
                     } label: {
-                        Text(isEditing ? "Terminer" : "Modifier")
+                        Image(systemName: isEditing ? "checkmark" : "pencil")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(isEditing ? .green : .primary)
                     }
+                    .buttonStyle(.glass)
                 }
             }
         }

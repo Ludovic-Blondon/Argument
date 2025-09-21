@@ -85,17 +85,6 @@ struct ArgumentNoteRow: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
-            
-            // Indicateur si c'est une note image
-            if note.isImageNote {
-                HStack {
-                    Image(systemName: "photo")
-                        .foregroundColor(.secondary)
-                    Text("Note avec image")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
         }
         .padding(.vertical, 4)
     }

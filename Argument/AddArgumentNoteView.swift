@@ -77,15 +77,26 @@ struct AddArgumentNoteView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Annuler") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.title3)
+                            .fontWeight(.medium)
                     }
+                    .buttonStyle(.glass)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Sauver") {
+                    Button {
                         saveNote()
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(title.trimmingCharacters(in: .whitespaces).isEmpty ? .secondary : .primary)
                     }
+                    .buttonStyle(.glass)
                     .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
