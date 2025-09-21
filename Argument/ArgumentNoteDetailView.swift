@@ -7,12 +7,14 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ArgumentNoteDetailView: View {
     @Bindable var note: ArgumentNote
     @Environment(\.modelContext) private var modelContext
     @State private var isEditing = false
     @State private var showingShareSheet = false
+    @State private var showingCopyConfirmation = false
     
     var body: some View {
         ScrollView {
@@ -70,6 +72,18 @@ struct ArgumentNoteDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
+                    // Bouton de copie (masqué pendant l'édition)
+                    if !isEditing && (!note.content.isEmpty || note.isImageNote) {
+                        Button {
+                            copyToClipboard()
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.title3)
+                                .fontWeight(.medium)
+                        }
+                        .buttonStyle(.glass)
+                    }
+                    
                     // Bouton de partage (masqué pendant l'édition)
                     if !isEditing && (!note.content.isEmpty || note.isImageNote) {
                         Button {
@@ -107,6 +121,27 @@ struct ArgumentNoteDetailView: View {
                 ShareSheet(items: ["\(note.title)\n\n\(note.content)"])
             }
         }
+        .alert("Copié !", isPresented: $showingCopyConfirmation) {
+            Button("OK") { }
+        } message: {
+            Text("Le contenu a été copié dans le presse-papiers.")
+        }
+    }
+    
+    // Fonction pour copier le contenu dans le presse-papiers
+    private func copyToClipboard() {
+        let pasteboard = UIPasteboard.general
+        
+        if note.isImageNote, let image = note.image {
+            // Copier l'image
+            pasteboard.image = image
+        } else {
+            // Copier seulement le contenu (sans le titre)
+            pasteboard.string = note.content
+        }
+        
+        // Afficher la confirmation
+        showingCopyConfirmation = true
     }
 }
 
