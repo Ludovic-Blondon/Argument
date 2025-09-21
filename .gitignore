@@ -1,0 +1,15 @@
+# Dossiers et fichiers utilisateur spécifiques
+*.xcuserdata/
+xcuserdata/
+
+# Fichiers de breakpoints personnels
+*.xcbkptlist
+
+# Dossier DerivedData (cache de build)
+DerivedData/
+
+# Fichiers DS_Store de macOS
+.DS_Store
+
+# Si vous utilisez des workspaces
+*.xcworkspace/xcuserdata/
