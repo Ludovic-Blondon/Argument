@@ -133,14 +133,34 @@ struct ArgumentNoteDetailView: View {
         let pasteboard = UIPasteboard.general
         
         if note.isImageNote, let image = note.image {
-            // Copier l'image
-            pasteboard.image = image
+            // Nettoyer le presse-papier d'abord
+            pasteboard.items = []
+            
+            // Préparer plusieurs représentations pour maximiser la compatibilité
+            var items: [String: Any] = [:]
+            
+            // 1. L'image UIImage elle-même
+            items["public.image"] = image
+            
+            // 2. PNG data (le plus universel)
+            if let pngData = image.pngData() {
+                items["public.png"] = pngData
+            }
+            
+            // 3. JPEG data (pour certaines apps)
+            if let jpegData = image.jpegData(compressionQuality: 1.0) {
+                items["public.jpeg"] = jpegData
+            }
+            
+            // Assigner tous les formats d'un coup
+            pasteboard.items = [items]
+            
+            print("✅ Image copiée avec formats: \(items.keys)")
+            
         } else {
-            // Copier seulement le contenu (sans le titre)
             pasteboard.string = note.content
         }
         
-        // Afficher la confirmation
         showingCopyConfirmation = true
     }
 }
