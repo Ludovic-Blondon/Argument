@@ -23,6 +23,7 @@ Package.resolved
 # Fichiers temporaires de test
 CopyTestScript.swift
 test_fix.md
+Package.swift
 
 # Archives Xcode
 *.xcarchive

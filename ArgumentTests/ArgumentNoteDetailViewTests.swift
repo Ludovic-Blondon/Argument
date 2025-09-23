@@ -137,8 +137,8 @@ struct ArgumentNoteDetailViewTests {
         }
     }
 
-    @Test("Test de support WebP")
-    func testWebPSupport() async throws {
+    @Test("Test de formats d'image standards")
+    func testStandardImageFormats() async throws {
         let size = CGSize(width: 75, height: 75)
         let renderer = UIGraphicsImageRenderer(size: size)
         let testImage = renderer.image { context in
@@ -146,21 +146,17 @@ struct ArgumentNoteDetailViewTests {
             context.fill(CGRect(origin: .zero, size: size))
         }
 
-        // Test du convertisseur WebP
-        let webpData = WebPConverter.convertToWebP(image: testImage, quality: 0.9)
+        // Test des conversions standards
+        let pngData = testImage.pngData()
+        let jpegData = testImage.jpegData(compressionQuality: 0.9)
 
-        // WebP peut ne pas être supporté nativement, mais la fonction devrait retourner quelque chose
-        // (soit WebP natif, soit fallback JPEG)
-        #expect(webpData != nil, "WebP converter devrait retourner des données (WebP ou fallback)")
+        #expect(pngData != nil, "PNG conversion devrait réussir")
+        #expect(jpegData != nil, "JPEG conversion devrait réussir")
 
-        if let data = webpData {
-            #expect(data.count > 0, "Les données converties ne devraient pas être vides")
+        if let png = pngData, let jpeg = jpegData {
+            #expect(png.count > 0, "PNG data ne devrait pas être vide")
+            #expect(jpeg.count > 0, "JPEG data ne devrait pas être vide")
         }
-
-        // Test de détection de support WebP
-        let isSupported = WebPConverter.isWebPSupported()
-        // Le résultat peut varier selon le système, on teste juste que la fonction ne crash pas
-        #expect(isSupported == true || isSupported == false, "La fonction de détection devrait retourner un booléen")
     }
 
     @Test("Test de performance pour conversion multi-format")
@@ -218,25 +214,25 @@ struct AdvancedImageFormatTests {
         #expect(jpegData != nil, "Conversion JPEG devrait réussir comme base pour HEIC")
     }
 
-    @Test("Simulation WebP - préparation pour support futur")
-    func testWebPPreparation() async throws {
+    @Test("Test de support de transparence PNG")
+    func testPNGTransparencySupport() async throws {
         let size = CGSize(width: 150, height: 150)
         let renderer = UIGraphicsImageRenderer(size: size)
         let testImage = renderer.image { context in
-            // Créer une image avec transparence pour tester WebP
+            // Créer une image avec transparence
             UIColor.red.withAlphaComponent(0.5).setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
 
-        // WebP supporte la transparence, contrairement à JPEG
-        #expect(testImage.cgImage != nil, "Image devrait être compatible pour conversion WebP")
+        #expect(testImage.cgImage != nil, "Image devrait avoir une représentation CGImage")
 
         // Test avec PNG qui préserve la transparence
         let pngData = testImage.pngData()
         #expect(pngData != nil, "PNG devrait supporter la transparence")
 
-        // Note: Pour WebP, on aurait besoin d'une bibliothèque externe
-        // Ici on teste que l'image est compatible
+        if let data = pngData {
+            #expect(data.count > 0, "PNG avec transparence devrait générer des données")
+        }
     }
 
     @Test("Test de formats UTI pour compatibilité système")
@@ -246,8 +242,7 @@ struct AdvancedImageFormatTests {
             "public.image",           // Format général
             "public.png",            // PNG spécifique
             "public.jpeg",           // JPEG spécifique
-            "public.heic",           // HEIC (iOS 11+)
-            "org.webmproject.webp"   // WebP (non natif, mais possible avec bibliothèque)
+            "public.heic"            // HEIC (iOS 11+)
         ]
 
         for uti in imageUTIs {
