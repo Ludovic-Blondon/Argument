@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import ImageIO
+import CoreGraphics
 
 struct ArgumentNoteDetailView: View {
     @Bindable var note: ArgumentNote
@@ -131,38 +133,65 @@ struct ArgumentNoteDetailView: View {
     // Fonction pour copier le contenu dans le presse-papiers
     private func copyToClipboard() {
         let pasteboard = UIPasteboard.general
-        
+
         if note.isImageNote, let image = note.image {
-            // Nettoyer le presse-papier d'abord
-            pasteboard.items = []
-            
-            // Préparer plusieurs représentations pour maximiser la compatibilité
-            var items: [String: Any] = [:]
-            
-            // 1. L'image UIImage elle-même
-            items["public.image"] = image
-            
-            // 2. PNG data (le plus universel)
+            // Créer un dictionnaire avec tous les formats d'image en une fois
+            var imageItems: [String: Any] = [:]
+
+            // Format principal (UIImage)
+            imageItems["public.image"] = image
+
+            // Formats de données supplémentaires
             if let pngData = image.pngData() {
-                items["public.png"] = pngData
+                imageItems["public.png"] = pngData
             }
-            
-            // 3. JPEG data (pour certaines apps)
-            if let jpegData = image.jpegData(compressionQuality: 1.0) {
-                items["public.jpeg"] = jpegData
+
+            if let jpegData = image.jpegData(compressionQuality: 0.9) {
+                imageItems["public.jpeg"] = jpegData
             }
-            
-            // Assigner tous les formats d'un coup
-            pasteboard.items = [items]
-            
-            print("✅ Image copiée avec formats: \(items.keys)")
-            
+
+            // HEIC si disponible
+            if #available(iOS 11.0, *) {
+                if let heicData = convertToHEIC(image: image) {
+                    imageItems["public.heic"] = heicData
+                }
+            }
+
+            // Assigner tous les formats en une seule fois
+            pasteboard.items = [imageItems]
         } else {
+            // Copie simple du texte
             pasteboard.string = note.content
         }
-        
+
         showingCopyConfirmation = true
     }
+
+    // MARK: - Fonctions de conversion d'image
+
+    @available(iOS 11.0, *)
+    private func convertToHEIC(image: UIImage) -> Data? {
+        guard let cgImage = image.cgImage else { return nil }
+
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, "public.heic" as CFString, 1, nil) else {
+            return nil
+        }
+
+        // Configuration pour HEIC avec qualité optimisée
+        let options: [CFString: Any] = [
+            kCGImageDestinationLossyCompressionQuality: 0.9
+        ]
+
+        CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)
+
+        if CGImageDestinationFinalize(destination) {
+            return data as Data
+        }
+
+        return nil
+    }
+
 }
 
 // Wrapper pour UIActivityViewController

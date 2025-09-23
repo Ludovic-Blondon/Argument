@@ -5,11 +5,27 @@ xcuserdata/
 # Fichiers de breakpoints personnels
 *.xcbkptlist
 
-# Dossier DerivedData (cache de build)
+# Dossiers de build et cache
 DerivedData/
+.build/
+build/
 
 # Fichiers DS_Store de macOS
 .DS_Store
 
 # Si vous utilisez des workspaces
 *.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Fichiers temporaires de test
+CopyTestScript.swift
+test_fix.md
+
+# Archives Xcode
+*.xcarchive
+
+# Playground
+*.playground
